@@ -23,6 +23,7 @@ body {
 		});
 
 		var player;
+		var enemies;
 		var starfield;
 		var cursors;
 		var bank;
@@ -41,17 +42,18 @@ body {
 			//  Remove the next 2 lines if running locally
 			game.load.baseURL = 'https://ioniodi.github.io/Shooter/';
 			game.load.crossOrigin = 'anonymous';
-			
+
 			game.load.image('starfield', 'assets/starfield.png');
 			game.load.image('ship', 'assets/ship.png');
 			game.load.image('bullet', 'assets/bullets/bullet.png');
+			game.load.image('enemy', 'assets/enemies/enemy2.png');
 
 		}
 
 		function create() {
-			
+
 			game.scale.pageAlignHorizontally = true;
-			
+
 			//  The scrolling starfield background
 			starfield = game.add.tileSprite(0, 0, 800, 600, 'starfield');
 
@@ -71,6 +73,21 @@ body {
 			game.physics.enable(player, Phaser.Physics.ARCADE);
 			player.body.maxVelocity.setTo(MAXSPEED, MAXSPEED);
 			player.body.drag.setTo(DRAG, DRAG);
+
+			// The baddies
+			enemies = game.add.group();
+			enemies.enableBody = true;
+			enemies.physicsBodyType = Phaser.Physics.ARCADE;
+			enemies.createMultiple(5, 'enemy');
+			enemies.setAll('anchor.x', 0.5);
+			enemies.setAll('anchor.y', 0.5);
+			enemies.setAll('scale.x', 0.6);
+			enemies.setAll('angle', 360);
+			enemies.setAll('outOfBoundsKill', true);
+			enemies.setAll('checkWorldBounds', true);
+
+			launchEnemy();
+
 
 			//  And some controls to play the game with
 			cursors = game.input.keyboard.createCursorKeys();
@@ -140,6 +157,28 @@ body {
 
 		function render() {
 
+		}
+
+		function launchEnemy() {
+				var MIN_ENEMY_SPACING = 300;
+				var MAX_ENEMY_SPACING = 3000;
+				var ENEMY_SPEED = 300;
+
+				var enemy = enemies.getFirstExists(false);
+				if (enemy) {
+						enemy.reset(800, game.rnd.integerInRange(0, game.width));
+						enemy.body.velocity.x = -ENEMY_SPEED;
+						enemy.body.velocity.y = game.rnd.integerInRange(-300, 300);
+						enemy.body.drag.y = 30;
+
+						// Update function for each enemy ship to update rotation etc
+						enemy.update = function(){
+							if (enemy.x >= player.x) {enemy.rotation = Math.atan2(player.y - enemy.y, player.x - enemy.x) - 3;}
+						}
+				}
+
+				// Send another enemy soon
+				game.time.events.add(game.rnd.integerInRange(MIN_ENEMY_SPACING, MAX_ENEMY_SPACING), launchEnemy);
 		}
 
 		function fireBullet() {
