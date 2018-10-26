@@ -47,7 +47,7 @@ body {
 			game.load.image('ship', 'assets/ship.png');
 			game.load.image('bullet', 'assets/bullets/bullet.png');
 			game.load.image('enemy', 'assets/enemies/enemy2.png');
-
+			game.load.spritesheet('explosion', '/assets/explode.png', 128, 128);
 		}
 
 		function create() {
@@ -83,8 +83,12 @@ body {
 			enemies.setAll('anchor.y', 0.5);
 			enemies.setAll('scale.x', 0.6);
 			enemies.setAll('angle', 360);
-			enemies.setAll('outOfBoundsKill', true);
-			enemies.setAll('checkWorldBounds', true);
+			enemies.forEach(function(enemy){
+					addEnemyEmitterTrail(enemy);
+					enemy.events.onKilled.add(function(){
+							enemy.trail.kill();
+					});
+			});
 
 			launchEnemy();
 
@@ -161,24 +165,47 @@ body {
 
 		function launchEnemy() {
 				var MIN_ENEMY_SPACING = 300;
-				var MAX_ENEMY_SPACING = 3000;
+				var MAX_ENEMY_SPACING = 1000;
 				var ENEMY_SPEED = 300;
 
 				var enemy = enemies.getFirstExists(false);
 				if (enemy) {
-						enemy.reset(800, game.rnd.integerInRange(0, game.width));
+						enemy.reset(800 , game.rnd.integerInRange(0, game.width));
 						enemy.body.velocity.x = -ENEMY_SPEED;
 						enemy.body.velocity.y = game.rnd.integerInRange(-300, 300);
-						enemy.body.drag.y = 30;
+						enemy.body.drag.y = 25;
+
+						enemy.trail.start(false, 800, 1);
 
 						// Update function for each enemy ship to update rotation etc
 						enemy.update = function(){
-							if (enemy.x >= player.x) {enemy.rotation = Math.atan2(player.y - enemy.y, player.x - enemy.x) - 3;}
+								enemy.angle = 270 - game.math.radToDeg(Math.atan2(enemy.body.velocity.x, enemy.body.velocity.y));
+								enemy.trail.x = enemy.x;
+								enemy.trail.y = enemy.y;
+
+								// Kill enemies once they go off screen
+								if (enemy.y > game.height + 200) {
+										enemy.kill();
+								}
 						}
+						/*enemy.update = function(){
+							if (enemy.x >= player.x) {enemy.rotation = Math.atan2(player.y - enemy.y, player.x - enemy.x) - 3;}
+						}*/
 				}
 
 				// Send another enemy soon
 				game.time.events.add(game.rnd.integerInRange(MIN_ENEMY_SPACING, MAX_ENEMY_SPACING), launchEnemy);
+		}
+
+		function addEnemyEmitterTrail(enemy) {
+				var enemyTrail = game.add.emitter(enemy.x, player.y - 10, 100);
+				enemyTrail.width = 10;
+				enemyTrail.makeParticles('explosion', [1,2,3,4,5]);
+				enemyTrail.setXSpeed(20, -20);
+				enemyTrail.setRotation(50, -50);
+				enemyTrail.setAlpha(0.5, 0, 800);
+				enemyTrail.setScale(0.01, 0.1, 0.01, 0.1, 1000, Phaser.Easing.Quintic.out);
+				enemy.trail = enemyTrail;
 		}
 
 		function fireBullet() {
