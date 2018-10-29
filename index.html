@@ -28,6 +28,7 @@ body {
 		var cursors;
 		var bank;
 		var shipTrail;
+		var explosions;
 		var bullets;
 		var fireButton;
 		var bulletTimer = 0;
@@ -82,9 +83,11 @@ body {
 			enemies.setAll('anchor.x', 0.5);
 			enemies.setAll('anchor.y', 0.5);
 			enemies.setAll('scale.x', 0.6);
+				enemies.setAll('scale.y', 0.7);
 			enemies.setAll('angle', 360);
 			enemies.forEach(function(enemy){
 					addEnemyEmitterTrail(enemy);
+					enemy.body.setSize(enemy.width * 3/4 , enemy.height * 3/4 );
 					enemy.events.onKilled.add(function(){
 							enemy.trail.kill();
 					});
@@ -109,6 +112,16 @@ body {
 					Phaser.Easing.Quintic.Out);
 			shipTrail.start(false, 5000, 10);
 
+			// An explosion pool
+			explosions = game.add.group();
+    	explosions.enableBody = true;
+    	explosions.physicsBodyType = Phaser.Physics.ARCADE;
+    	explosions.createMultiple(30, 'explosion');
+    	explosions.setAll('anchor.x', 0.5);
+    	explosions.setAll('anchor.y', 0.5);
+    	explosions.forEach( function(explosion) {
+        	explosion.animations.add('explosion');
+    	});
 		}
 
 		function update() {
@@ -157,10 +170,17 @@ body {
 			shipTrail.y = player.y;
 			shipTrail.x = player.x - 20;
 
+			// Check collisions
+			game.physics.arcade.overlap(player, enemies, shipCollide, null, this);
+			game.physics.arcade.overlap(enemies, bullets, hitEnemy, null, this);
+
 		}
 
 		function render() {
-
+		   // for (var i = 0; i < enemies.length; i++)
+    	 // {
+    	 //      game.debug.body(enemies.children[i]);    }
+    	 // game.debug.body(player);
 		}
 
 		function launchEnemy() {
@@ -206,6 +226,25 @@ body {
 				enemyTrail.setAlpha(0.5, 0, 800);
 				enemyTrail.setScale(0.01, 0.1, 0.01, 0.1, 1000, Phaser.Easing.Quintic.out);
 				enemy.trail = enemyTrail;
+		}
+
+		function shipCollide(player, enemy) {
+				var explosion = explosions.getFirstExists(false);
+				explosion.reset(enemy.body.x + enemy.body.halfWidth, enemy.body.y + enemy.body.halfHeight);
+    		explosion.body.velocity.y = enemy.body.velocity.y;
+    		explosion.alpha = 0.7;
+    		explosion.play('explosion', 30, false, true);
+    		enemy.kill();
+		}
+
+		function hitEnemy(enemy, bullet) {
+    	var explosion = explosions.getFirstExists(false);
+    	explosion.reset(bullet.body.x + bullet.body.halfWidth, bullet.body.y + bullet.body.halfHeight);
+    	explosion.body.velocity.y = enemy.body.velocity.y;
+    	explosion.alpha = 0.7;
+    	explosion.play('explosion', 30, false, true);
+    	enemy.kill();
+    	bullet.kill();
 		}
 
 		function fireBullet() {
