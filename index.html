@@ -172,10 +172,10 @@ body {
 			bulleItem.setAll('outOfBoundsKill', true);
 
 			bulleItem.setAll('checkWorldBounds', true);
-			bulleItem.forEach(function(bulletUp)){
+			bulleItem.forEach(function(bulletUp){
 				bulletUp.scale.setTo(0.075, 0.075);
 				bulletUp.body.velocity.setTo(-200, 20);
-			};
+			});
 
 			// More baddies
 			enemylvl2 = game.add.group();
