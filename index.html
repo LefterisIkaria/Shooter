@@ -50,6 +50,7 @@ body {
 		var score = 0;
 		var scoreText;
 		var enemylvl2LanchTimer;
+		var upgraded = false;
 		var gameOver;
 
 		var ACCLERATION = 600;
@@ -60,7 +61,7 @@ body {
 
 			//  We need this because the assets are on github pages
 			//  Remove the next 2 lines if running locally
-			 // game.load.baseURL = 'https://ioniodi.github.io/Shooter/';
+			 // game.load.baseURL = 'https://LefterisIkaria.github.io/Shooter/';
 			 // game.load.crossOrigin = 'anonymous';
 
 			//game.load.audio('theme' , 'assets/sounds/ShootingSatrs.ogg');
@@ -77,6 +78,7 @@ body {
 	    game.load.image('boss', '/assets/enemies/boss.png');
       game.load.image('deathRay', '/assets/bullets/death-ray.png');
 			game.load.image('healthUp', '/assets/Upgrades/healthUp.png');
+			game.load.image('bulletUp', '/assets/Upgrades/bulletUp.png');
 		}
 
 		function create() {
@@ -234,8 +236,8 @@ body {
              });
 
              //  reset pacing for other enemies
-             blueEnemySpacing = 2500;
-             greenEnemySpacing = 1000;
+             Enemylvl1Spacing = 1000;
+             enemylvl2Spacing = 2500;
 
              //  give some bonus health
              player.health = Math.min(100, player.health + 40);
@@ -334,7 +336,7 @@ body {
      //  boss's boosters
      booster = game.add.emitter(boss.body.x, boss.body.y - boss.height / 2);
      booster.width = 0;
-     booster.makeParticles('blueEnemyBullet');
+     booster.makeParticles('enemyBullet');
      booster.forEach(function(p){
        p.crop({x: 120, y: 0, width: 45, height: 50});
        //  clever way of making 2 exhaust trails by shifing particles randomly left or right
@@ -473,6 +475,7 @@ body {
 
 			game.physics.arcade.overlap(enemyBullets, player, enemyHitsPlayer, null, this);
 			game.physics.arcade.overlap(player, healthItem, healthOverlap, null, this);
+			game.physics.arcade.overlap(player, bulletItem, bulletOverlap, null, this);
 
 			// Game over ?
 	    if (! player.alive && gameOver.visible === false) {
@@ -677,9 +680,6 @@ function launchBoss() {
 			 var item  = game.rnd.integerInRange(0,1);
 			 addItem(item, enemy.x, enemy.y);
 		 }
-     if (score > 5000 && player.weaponLevel < 2) {
-       player.weaponLevel = 2;
-     }
 		}
 
 	 //  Don't count a hit in the lower right and left quarants to aproximate better collisions
@@ -747,68 +747,97 @@ function launchBoss() {
 				healthUp.reset(posX-100, posY+100);
 				var angle = game.physics.arcade.moveToObject(healthUp, player, 400);
 			}
-			else{
+			else if(item==1){
 				bulletUp = bulletItem.getFirstExists(false);
-				bulletUp.reset(posX-100, posY+100);
+				bulletUp.reset(posX, posY);
 				var angle = game.physics.arcade.moveToObject(bulletUp, player, 400);
 			}
 		}
 
+		function healthOverlap(player,healthUp){
+			healthUp.kill();
+			player.heal(100);
+			shields.render();
+		}
+
+		function bulletOverlap(player,bulletUp){
+			blletUp.kill();
+			upgraded = true;
+		}
+
+
 
 		function fireBullet() {
+			if(upgraded){
+					var BULLET_SPEED = 700;
+					var BULLET_SPACING = 400;
 
-						switch (player.weaponLevel) {
-			       case 1:
-			       //  To avoid them being allowed to fire too fast we set a time limit
-			       if (game.time.now > bulletTimer)
-						 {
-							 var BULLET_SPEED = 400;
-	             var BULLET_SPACING = 250;
-	             //  Grab the first bullet we can from the pool
-	             var bullet = bullets.getFirstExists(false);
-
-	             if (bullet)
-	             {
-	                 //  And fire it
-	                 //  Make bullet come out of tip of ship with right angle
-	                 var bulletOffset = 20 * Math.sin(game.math.degToRad(player.angle));
-	                 bullet.reset(player.x + bulletOffset, player.y);
-	                 bullet.angle = player.angle;
-	                 game.physics.arcade.velocityFromAngle(bullet.angle , BULLET_SPEED, bullet.body.velocity);
-	                 bullet.body.velocity.x += player.body.velocity.x;
-
-	                 bulletTimer = game.time.now + BULLET_SPACING;
-	             }
-	         }
-					 break;
-
-
-         case 2:
-         if (game.time.now > bulletTimer) {
-             var BULLET_SPEED = 400;
-             var BULLET_SPACING = 550;
-
-
-             for (var i = 0; i < 3; i++) {
-                 var bullet = bullets.getFirstExists(false);
-                 if (bullet) {
-                     //  Make bullet come out of tip of ship with right angle
-                     var bulletOffset = 20 * Math.sin(game.math.degToRad(player.angle));
-                     bullet.reset(player.x + bulletOffset, player.y);
-                     //  "Spread" angle of 1st and 3rd bullets
-                     var spreadAngle;
-                     if (i === 0) spreadAngle = -20;
-                     if (i === 1) spreadAngle = 0;
-                     if (i === 2) spreadAngle = 20;
-                    bullet.angle = player.angle + spreadAngle;
-                     game.physics.arcade.velocityFromAngle(spreadAngle - 90, BULLET_SPEED, bullet.body.velocity);
-                     bullet.body.velocity.x += player.body.velocity.x;
-                 }
-                 bulletTimer = game.time.now + BULLET_SPACING;
-            }
+					for (var i =0; i<4; i++){
+						var bullet = bullets.getFirstExists(false);
+						if (bullet) {
+							// Make bullet come out of tip of ship with right angle
+							var bulletOffset = 20 * Math.sin(game.math.degToRad(player.angle));
+							bullet.reset(player.x + bulletOffset,player.y);
+							// Spread angle of 1st, 2nd , 3rd and 4th bullets
+							var spreadAngle;
+							if (i=== 0) spreadAngle = -15;
+							if (i=== 1) spreadAngle = -5;
+							if (i=== 2) spreadAngle = 5;
+							if (i=== 3) spreadAngle = 15;
+							bullet.angle = player.angle + spreadAngle;
+							game.physics.arcade.velocityFromAngle(spreadAngle, BULLET_SPEED, bullet.body.velocity);
+							bullet.body.velocity.x += player.body.velocity.x + 100;
+						}
+					}
+			}
+			else{
+				switch (player.weaponLevel){
+				case 1:
+				// To avoid them being allowed to fire too fast we set a time limit
+						var BULLET_SPEED = 550;
+						var BULLET_SPACING = 500;
+						// Grab the first bullet we can from the pool
+						var bullet = bullets.getFirstExists(false);
+						if (bullet){
+							//And fire it
+							// Make bullet come out of tip of ship with right angle
+							var bulletOffset = 20 * Math.sin(game.math.degToRad(player.angle));
+							bullet.reset(player.x + bulletOffset,player.y);
+							bullet.angle = player.angle;
+							game.physics.arcade.velocityFromAngle(bullet.angle, BULLET_SPEED, bullet.body.velocity)
+					}
+					break;
+				case 2:
+						var BULLET_SPEED = 700;
+						var BULLET_SPACING = 350;
+						// Grab the first bullet we can from the pool
+						var bullet = bullets.getFirstExists(false);
+						if (bullet){
+							//And fire it
+							// Make bullet come out of tip of ship with right angle
+							var bulletOffset = 20 * Math.sin(game.math.degToRad(player.angle));
+							bullet.reset(player.x + bulletOffset,player.y);
+							bullet.angle = player.angle;
+							game.physics.arcade.velocityFromAngle(bullet.angle, BULLET_SPEED, bullet.body.velocity)
+				}
+				break;
+				case 3:
+						var BULLET_SPEED = 900;
+						var BULLET_SPACING = 200;
+						// Grab the first bullet we can from the pool
+						var bullet = bullets.getFirstExists(false);
+						if (bullet){
+							//And fire it
+							// Make bullet come out of tip of ship with right angle
+							var bulletOffset = 20 * Math.sin(game.math.degToRad(player.angle));
+							bullet.reset(player.x + bulletOffset,player.y);
+							bullet.angle = player.angle;
+							game.physics.arcade.velocityFromAngle(bullet.angle, BULLET_SPEED, bullet.body.velocity)
+					}
 				}
 			}
 		}
+
 
 	</script>
 </body>
